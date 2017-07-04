@@ -1,0 +1,9 @@
+TIPO=2
+EQUALS=3
+COMMAND_END=1
+ID=4
+VALUE=5
+WS=6
+'='=3
+';'=1
+'t'=2
