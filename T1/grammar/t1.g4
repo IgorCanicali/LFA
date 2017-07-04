@@ -1,63 +1,79 @@
 grammar t1;
 //C:\Users\igorc\Desktop\LFA\tmp\T1\src\t1
 
-@header {
-package t1;
-import t1.ast.*;
-import java.util.List;
-import java.util.LinkedList;
-}
-
-prog
+prog 
     : code
     ;
 
 code 
-    : var_dec* (assignment | control_structure | function)*
+    : definition* (train_operator | control_structure | function)*
     ;
 
-var_dec returns [Definition result]
-    : t = type var = ID COMMAND_END {$result = new Definiton($t.result, $var.text)}
-    | t = type var = ID EQUALS val = VALUE COMMAND_END {$result = new Definiton($t.result, $var.text, $val.text)}
+definition  returns [Definition result]
+    : type ID COMMAND_END {$result = new Definiton($type.result, $ID.text);}
+    | primitive_type ID ASSIGNMENT primitive_value COMMAND_END {$result = new Definiton($primitive_type.result, $ID.text, $primitive_value.text);}
     ;
 
-assignment 
-    : ID EQUALS (ID | VALUE | math) COMMAND_END
-    | ID SPLIT VALUE COMMAND_END
+train_operator
+    : ID SPLIT INT COMMAND_END
     | ID REMOVE position COMMAND_END
     | ID APPEND position ID COMMAND_END
     ;
 /* Referentes ao tipo trem, exceto os que dizem o inverso
- * EQUALS  atribui nome(ID)(serve para qualquer tipo)
+ * ASSIGNMENT  atribui nome(ID)(serve para qualquer tipo)
  * APPEND  adiciona um trem em outro
  * SPLIT   separa um trem em dois
- * comparable compara dois tipo(tipos iguais)(serve para qualquer tipo)
+ * compare_operator compara dois tipo(tipos iguais)(serve para qualquer tipo)
  * REMOVE  retira um tipo(exceto trem)
  */
 
 control_structure
-    : IF LPAR ID comparable ID RPAR LKEYS code RKEYS (ELSE LKEYS code RKEYS)?
-    | FOR (INT? ID (EQUALS VALUE)? COMMAND_END ID comparable (ID | VALUE) COMMAND_END ID EQUALS math) LKEYS code RKEYS
+    : IF LPAR ID RPAR LKEYS code RKEYS/*No caso ID tem que ser BOOLEAN*/
+    | IF LPAR ID RPAR LKEYS code RKEYS ELSE LKEYS code RKEYS/*No caso ID tem que ser BOOLEAN*/
+    | IF LPAR ID compare_operator ID RPAR LKEYS code RKEYS
+    | IF LPAR ID compare_operator ID RPAR LKEYS code RKEYS ELSE LKEYS code RKEYS
+    | WHILE LPAR ID RPAR LKEYS code RKEYS/*No caso ID tem que ser BOOLEAN*/
+    | WHILE LPAR ID compare_operator ID RPAR LKEYS code RKEYS
+    ;
+
+math_operator
+    : PLUS
+    | MINUS
+    | MULT
+    | DIV
     ;
 
 function 
-    : ID LPAR parameter? RPAR COMMAND_END
+    : ID LPAR value? RPAR COMMAND_END
     ;
 
 type returns [Type result]
-    : tt = TRAIN {$result = new Type($tt.text)}
-    | tw = WAGON {$result = new Type($tw.text)}
-    | tl = LOCOM {$result = new Type($tl.text)}
-    | ti = INT   {$result = new Type($ti.text)}
+    : primitive_type {$result = new Type($primitive_type.result);}
+    | object_type {$result = new Type($object_type.result);}
+    ;
+
+primitive_type returns [Type result]
+    : STRING {$result = new Type($STRING.text);}
+    | BOOLEAN {$result = new Type($BOOLEAN.text);}
+    | INTEGER {$result = new Type($INTEGER.text);}
+    ;
+
+object_type returns [Type result]
+    : TRAIN {$result = new Type($TRAIN.text);}
+    | WAGON {$result = new Type($WAGON.text);}
+    | LOCOM {$result = new Type($LOCOM.text);}
     ;
 
 math 
-    : (ID | VALUE) ((PLUS | MINUS) (ID | VALUE))*
+    : value math_operator math
+    | LPAR math RPAR
+    | LPAR math math_operator math RPAR
+    | value
     ;
 
-comparable
+compare_operator
     : COMP_SMALLER
-    | COMP_EQUALS
+    | COMP_ASSIGNMENT
     | COMP_BIGER
     | COMP_DIFF
     ;
@@ -67,35 +83,53 @@ position
     | TAIL
     ;
 
-parameter
+value
     : ID 
-    | VALUE
+    | primitive_value
     ;
 
+primitive_value
+    : INT
+    | BOOL
+    | STR
+    ;
+
+fragment
+    NUMBER      : [0-9]+ ;
+
+fragment
+    QM          : '"' ;
+
+DIV             : '/' ;
+MULT            : '*' ;
 LPAR            : '(' ;
 RPAR            : ')' ;
 PLUS            : '+' ;
 LKEYS           : '{' ;
 RKEYS           : '}' ;
-SPLIT           : '/' ;
+SPLIT           : 'split' ;
 MINUS           : '-' ;
-APPEND          : '+' ;
-EQUALS          : '=' ;
-REMOVE          : '-' ;
+APPEND          : 'append' ;
+ASSIGNMENT      : '=' ;
+REMOVE          : 'remove' ;
 COMP_BIGER      : '>' ;
 COMP_SMALLER    : '<' ;
 COMMAND_END     : ';' ;
 IF              : 'if' ;
 COMP_DIFF       : '!=' ;
-COMP_EQUALS     : '==' ;
-FOR             : 'for' ;
-INT             : 'int' ;
+COMP_ASSIGNMENT : '==' ;
+WHILE             : 'while' ;
 ELSE            : 'else' ;
 HEAD            : 'head' ;
 TAIL            : 'tail' ;
 TRAIN           : 'Train' ;
 WAGON           : 'Wagon' ;
+STRING          : 'String';
+INTEGER         : 'Integer' ;
+BOOLEAN         : 'Boolean' ;
 LOCOM           : 'Locomotive' ;
-VALUE           : [0-9]+ ;
+INT             : NUMBER ;
+BOOL            : ('True' | 'False') ;
+STR             : QM [_a-zA-Z0-9]* QM ;
 ID              : [_a-zA-Z][_a-zA-Z0-9]* ;
 WS              : [ \t\r\n]+ -> skip;
