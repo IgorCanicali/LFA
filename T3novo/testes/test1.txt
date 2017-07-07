@@ -1,0 +1,9 @@
+Train t1;
+Train t2;
+Locomotive l1;
+Locomotive l2;
+Wagon w1;
+Wagon w2;
+Wagon w3;
+Wagon w4;
+t1
